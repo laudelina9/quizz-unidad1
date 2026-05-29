@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Desafío de Informática</title>
+  <style>
+    :root{
+      --bg:#0f172a;--card:#111827;--accent:#38bdf8;--text:#e5e7eb;--muted:#94a3b8;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:linear-gradient(180deg,#0f172a,#111827);color:var(--text)
+    }
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+    .card{
+      width:min(100%,560px);background:rgba(17,24,39,.96);
+      border:1px solid rgba(148,163,184,.2);border-radius:24px;padding:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35)
+    }
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.4}
+    label{display:block;margin:12px 0 6px;font-weight:600}
+    input,button,textarea,select{
+      width:100%;border-radius:16px;border:1px solid rgba(148,163,184,.25);
+      background:#0b1220;color:var(--text);padding:14px 16px;font-size:16px
+    }
+    button{
+      background:linear-gradient(135deg,#0284c7,#0ea5e9);
+      border:none;font-weight:700;margin-top:12px;min-height:52px
+    }
+    button.secondary{background:#1f2937}
+    .q{font-size:20px;line-height:1.35;margin:8px 0 14px}
+    .opts{display:grid;gap:10px}
+    .opt{
+      padding:14px 14px;background:#0b1220;border:1px solid rgba(148,163,184,.2);
+      border-radius:16px;text-align:left
+    }
+    .hidden{display:none}
+    .meta{
+      display:flex;justify-content:space-between;gap:8px;color:var(--muted);
+      font-size:13px;margin-bottom:10px
+    }
+    .bar{
+      height:10px;background:#1f2937;border-radius:999px;overflow:hidden;margin:10px 0 16px
+    }
+    .bar>div{
+      height:100%;width:0;background:linear-gradient(90deg,#22c55e,#38bdf8)
+    }
+    .small{font-size:13px;color:var(--muted);line-height:1.5}
+    .actions{display:grid;gap:10px;margin-top:16px}
+    .opt.selected{outline:2px solid var(--accent)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div id="screenStart">
+      <h1>Desafío de Informática</h1>
+      <p class="sub">Ingresá nombre, apellido y código individual. El examen no muestra corrección en pantalla.</p>
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" autocomplete="name" placeholder="Nombre" />
+
+      <label for="apellido">Apellido</label>
+      <input id="apellido" autocomplete="family-name" placeholder="Apellido" />
+
+      <label for="codigo">Código individual</label>
+      <input id="codigo" placeholder="Código" />
+
+      <button id="btnStart" type="button">Comenzar</button>
+      <p class="small">Tu código docente no se bloquea nunca. Los códigos de alumnos se bloquean solo en ese celular cuando finalizan.</p>
+    </div>
+
+    <div id="screenQuiz" class="hidden">
+      <div class="meta">
+        <span id="studentName"></span>
+        <span id="qCount"></span>
+      </div>
+
+      <div class="bar"><div id="barFill"></div></div>
+      <div class="q" id="qText"></div>
+      <div id="qArea"></div>
+
+      <div class="actions">
+        <button id="btnFinish" class="hidden" type="button">Finalizar</button>
+      </div>
+
+      <p class="small">Respondé con atención. No se indica si está bien o mal.</p>
+    </div>
+
+    <div id="screenEnd" class="hidden">
+      <h1>Actividad finalizada</h1>
+      <p class="sub">Tu intento quedó registrado.</p>
+      <button id="btnExit" type="button">Salir definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FORM_ID = "mkoeyjbq"
+const TEACHER_CODE = "DOCENTE-2026";
+
+const allowedCodes = [
+  "A1-2026","A2-2026","A3-2026","A4-2026","A5-2026","A6-2026","A7-2026",
+  "A8-2026","A9-2026","A10-2026","A11-2026","A12-2026","A13-2026","A14-2026",
+  "A15-2026","A16-2026","A17-2026","A18-2026","A19-2026","A20-2026","A21-2026",
+  "A22-2026","A23-2026","A24-2026","A25-2026","A26-2026","A27-2026","A28-2026"
+];
+
+const questions = [
+  {q:'La informática se ocupa de:', o:['Solo del uso de computadoras','El tratamiento automático de la información','La reparación de hardware','El uso exclusivo de internet'], c:1},
+  {q:'Técnica es:', o:['Un tipo de computadora','Un conjunto de procedimientos para hacer una tarea','Un programa de internet','Un periférico de salida'], c:1},
+  {q:'Ofimática es:', o:['Software para videojuegos','Herramientas informáticas para tareas de oficina','Una parte del hardware','Un lenguaje de programación'], c:1},
+  {q:'Entrada significa:', o:['Envía información al usuario','Recibe y envía información','Permite ingresar datos','Solo imprime resultados'], c:2},
+  {q:'Un lenguaje de programación sirve para:', o:['Escribir instrucciones para una computadora','Limpiar archivos','Conectar internet','Proteger una pantalla'], c:0},
+  {q:'Un lenguaje de alto nivel se caracteriza por:', o:['Estar más cerca del lenguaje humano','Estar más cerca de la máquina','No necesitar instrucciones','Solo servir para hardware'], c:0},
+  {q:'El software es:', o:['La parte física de la computadora','El conjunto de programas y datos','Un cable de conexión','Un tipo de monitor'], c:1},
+  {q:'Un periférico mixto puede:', o:['Solo ingresar datos','Solo mostrar imágenes','Ingresar y enviar información','Solo almacenar archivos'], c:2},
+  {q:'Compilación significa:', o:['Traduce todo el programa antes de ejecutarlo','Traduce línea por línea durante la ejecución','Borra el programa','Imprime el resultado'], c:0},
+  {q:'Aplicaciones estándar son:', o:['Aplicaciones generales para muchas personas','Aplicaciones hechas a medida','Aplicaciones de hardware','Aplicaciones sin uso'], c:0},
+];
+
+let i = 0;
+let respuestas = [];
+let nombre = '';
+let apellido = '';
+let codigo = '';
+
+const $ = s => document.querySelector(s);
+const start = $('#screenStart');
+const quiz = $('#screenQuiz');
+const end = $('#screenEnd');
+const qText = $('#qText');
+const qArea = $('#qArea');
+const qCount = $('#qCount');
+const barFill = $('#barFill');
+const studentName = $('#studentName');
+const btnStart = $('#btnStart');
+const btnFinish = $('#btnFinish');
+
+let audioReady = false;
+function unlockAudio(){
+  if(audioReady) return;
+  try{
+    const A = window.AudioContext || window.webkitAudioContext;
+    const ctx = new A();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.0001;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.01);
+    audioReady = true;
+  }catch(e){}
+}
+
+function tone(freq, dur){
+  if(!audioReady) return;
+  const A = window.AudioContext || window.webkitAudioContext;
+  const ctx = new A();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = 0.0001;
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  osc.stop(ctx.currentTime + dur + 0.02);
+}
+function good(){ tone(720,0.14); setTimeout(()=>tone(980,0.12),140); }
+function bad(){ tone(180,0.18); }
+
+function lockKey(){ return 'desafio_informatica_' + codigo; }
+
+function render(){
+  const p = questions[i];
+  qCount.textContent = `${i+1} / ${questions.length}`;
+  barFill.style.width = `${(i / questions.length) * 100}%`;
+  qText.textContent = p.q;
+  qArea.innerHTML = '';
+  btnFinish.classList.add('hidden');
+
+  const box = document.createElement('div');
+  box.className = 'opts';
+
+  p.o.forEach((op, idx)=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.type = 'button';
+    b.textContent = op;
+    b.onclick = ()=>{
+      respuestas[i] = idx;
+      good();
+      setTimeout(next, 280);
+    };
+    box.appendChild(b);
+  });
+  qArea.appendChild(box);
+
+  if(i === questions.length - 1) btnFinish.classList.remove('hidden');
+}
+
+function next(){
+  i++;
+  if(i < questions.length) render();
+  else finish();
+}
+
+function buildReport(){
+  const lines = [];
+  let correct = 0;
+  questions.forEach((q, idx)=>{
+    const chosen = respuestas[idx];
+    const ok = chosen === q.c;
+    if(ok) correct++;
+    lines.push(
+      `${idx+1}. ${q.q}\n` +
+      `Elegida: ${chosen + 1} - ${q.o[chosen] || ''}\n` +
+      `Correcta: ${q.c + 1} - ${q.o[q.c]}\n` +
+      `Estado: ${ok ? 'CORRECTA' : 'INCORRECTA'}`
+    );
+  });
+  return { lines: lines.join('\n\n'), correct, total: questions.length };
+}
+
+function finish(){
+  if(codigo !== TEACHER_CODE){
+    localStorage.setItem(lockKey(), 'used');
+  }
+
+  const rep = buildReport();
+  const form = new FormData();
+  form.append('_subject', `Parcial Informática - ${nombre} ${apellido} - ${codigo}`);
+  form.append('nombre', nombre);
+  form.append('apellido', apellido);
+  form.append('codigo', codigo);
+  form.append('puntaje', `${rep.correct}/${rep.total}`);
+  form.append('detalle', rep.lines);
+  form.append('fecha', new Date().toLocaleString('es-AR'));
+  form.append('user_agent', navigator.userAgent);
+  form.append('rol', codigo === TEACHER_CODE ? 'DOCENTE' : 'ALUMNO');
+
+  fetch(`https://formspree.io/f/${FORM_ID}`, {
+    method: 'POST',
+    body: form,
+    headers: { 'Accept': 'application/json' }
+  }).finally(() => {
+    start.classList.add('hidden');
+    quiz.classList.add('hidden');
+    end.classList.remove('hidden');
+  });
+}
+
+btnStart.addEventListener('click', ()=>{
+  unlockAudio();
+
+  nombre = $('#nombre').value.trim();
+  apellido = $('#apellido').value.trim();
+  codigo = $('#codigo').value.trim().toUpperCase();
+
+  if(!nombre || !apellido || !codigo){
+    bad();
+    alert('Completá nombre, apellido y código.');
+    return;
+  }
+
+  if(codigo !== TEACHER_CODE && !allowedCodes.includes(codigo)){
+    bad();
+    alert('Código inválido.');
+    return;
+  }
+
+  if(codigo !== TEACHER_CODE && localStorage.getItem(lockKey()) === 'used'){
+    bad();
+    alert('Este código ya se usó en este celular.');
+    return;
+  }
+
+  start.classList.add('hidden');
+  quiz.classList.remove('hidden');
+  studentName.textContent = `${nombre} ${apellido}`;
+  render();
+});
+
+btnFinish.addEventListener('click', finish);
+
+$('#btnExit').addEventListener('click', ()=>{
+  document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e5e7eb;font-family:system-ui;text-align:center;padding:24px"><div><h1>Gracias</h1><p>Podés cerrar esta pestaña.</p></div></div>';
+});
+</script>
+</body>
+</html>
